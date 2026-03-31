@@ -1,0 +1,41 @@
+<?php
+
+// Folder where files will be stored
+$targetDir = "uploads/";
+
+// Create folder if it doesn't exist
+if (!is_dir($targetDir)) {
+    mkdir($targetDir, 0755, true);
+}
+
+$file = $_FILES["fileToUpload"];
+
+// Check for upload errors
+if ($file["error"] !== UPLOAD_ERR_OK) {
+    die("Upload failed with error code " . $file["error"]);
+}
+
+// Sanitize filename
+$filename = basename($file["name"]);
+$filename = preg_replace("/[^A-Za-z0-9._-]/", "_", $filename);
+
+// Build full path
+$targetFile = $targetDir . $filename;
+
+// Optional: restrict file types
+$allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+if (!in_array($file["type"], $allowedTypes)) {
+    die("File type not allowed");
+}
+
+// Optional: limit file size (2MB)
+if ($file["size"] > 2 * 1024 * 1024) {
+    die("File is too large");
+}
+
+// Move uploaded file
+if (move_uploaded_file($file["tmp_name"], $targetFile)) {
+    echo "File uploaded successfully: " . htmlspecialchars($filename);
+} else {
+    echo "Error uploading file";
+}
