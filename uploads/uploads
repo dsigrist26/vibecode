@@ -1,5 +1,6 @@
 <?php
 
+try{
 // Folder where files will be stored
 $targetDir = "uploads/";
 
@@ -19,14 +20,28 @@ if ($file["error"] !== UPLOAD_ERR_OK) {
 $filename = basename($file["name"]);
 $filename = preg_replace("/[^A-Za-z0-9._-]/", "_", $filename);
 
-// Build full path
-$targetFile = $targetDir . $filename;
+//checking the beginning bytes of the file to see if they match to the format that we have
+$fh = fopen($file["tmp_name"], "rb");
+$bytes = bin2hex(fread($fh, 8));
+fclose($fh);
+
+//moves everything to lowercase for an easier read when validating
+$bytes = strtolower($bytes);
 
 // Optional: restrict file types
-$allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
-if (!in_array($file["type"], $allowedTypes)) {
+$pdf = str_starts_with($bytes, "25504446");
+$jpeg = str_starts_with($bytes, "ffd8ff");
+$png = str_starts_with($bytes, "89504e470d0a1a0a");
+
+if(!($pdf | $jpeg | $png)){ //if the file is not either of these 3 types, then the app dies.
     die("File type not allowed");
 }
+
+//hashing file name
+$hashedname = hash('sha256', random_bytes(32));
+
+// Build full path
+$targetFile = $targetDir . $hashedname; 
 
 // Optional: limit file size (2MB)
 if ($file["size"] > 2 * 1024 * 1024) {
@@ -35,7 +50,12 @@ if ($file["size"] > 2 * 1024 * 1024) {
 
 // Move uploaded file
 if (move_uploaded_file($file["tmp_name"], $targetFile)) {
-    echo "File uploaded successfully: " . htmlspecialchars($filename);
+    echo "File uploaded successfully: " . htmlspecialchars($hashedname);
 } else {
     echo "Error uploading file";
+}
+}
+
+catch(Exception $e){
+    echo "Something went wrong";
 }
